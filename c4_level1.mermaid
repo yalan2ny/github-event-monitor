@@ -1,11 +1,8 @@
 ```mermaid
-graph TD
+flowchart TD
     User[User --- Data Consumer]
     GitHubAPI[GitHub API --- External System]
-
-    subgraph GitHub Metrics Platform
-        System[GitHub Metrics Platform]
-    end
+    System[GitHub Metrics Platform]
 
     User -->|Uses| System
     System -->|Fetches GitHub Events| GitHubAPI
