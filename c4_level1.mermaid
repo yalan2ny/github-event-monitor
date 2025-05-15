@@ -1,8 +1,12 @@
 ```mermaid
 graph TD
     User[User --- Data Consumer]
-    System[GitHub Metrics Platform]
     GitHubAPI[GitHub API --- External System]
+
+    subgraph GitHub Metrics Platform
+        System[GitHub Metrics Platform]
+    end
 
     User -->|Uses| System
     System -->|Fetches GitHub Events| GitHubAPI
+```
