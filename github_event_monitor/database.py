@@ -4,8 +4,8 @@ Database Module
 This module handles database connections and provides session management.
 """
 import logging
-from contextlib import asynccontextmanager
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from contextlib import contextmanager
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -13,48 +13,42 @@ logger = logging.getLogger(__name__)
 # Cache for database engines
 _engines = {}
 
+
 def get_engine(database_url):
     """
     Get or create a database engine for the given URL.
-    
+
     Args:
         database_url: SQLAlchemy database URL
-        
+
     Returns:
-        AsyncEngine instance
+        Engine instance
     """
     if database_url not in _engines:
-        _engines[database_url] = create_async_engine(
-            database_url, 
+        _engines[database_url] = create_engine(
+            database_url,
             echo=False,
-            connect_args={"check_same_thread": False} if "sqlite" in database_url else {}
+            connect_args={"check_same_thread": False}
+            if "sqlite" in database_url
+            else {},
         )
-    
     return _engines[database_url]
 
-@asynccontextmanager
-async def get_session(database_url):
+
+@contextmanager
+def get_sync_session(engine):
     """
-    Get a database session for the given URL.
-    
+    Get a database session for the given engine.
+
     Args:
-        database_url: SQLAlchemy database URL
-        
+        engine: SQLAlchemy Engine instance
+
     Yields:
-        AsyncSession instance
+        Session instance
     """
-    engine = get_engine(database_url)
-    
-    # Create session factory
-    async_session = sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
-    
-    # Create and yield session
-    session = async_session()
+    SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+    session = SessionLocal()
     try:
         yield session
     finally:
-        await session.close()
+        session.close()

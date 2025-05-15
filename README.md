@@ -88,7 +88,7 @@ All data is stored locally:
 
 - **Bronze Layer**: JSON files in `./data/bronze/`
 - **Silver Layer**: SQLite database at `./data/silver/github_events.db`
-- **Gold Layer**: SQLite database at `./data/gold/github_metrics.db`
+- **Gold Layer**: SQLite database at `./data/gold/github_events.db`
 
 ## API Endpoints
 
