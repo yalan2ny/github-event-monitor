@@ -5,10 +5,12 @@ A Python application that monitors GitHub events and provides metrics through a 
 ## Features
 
 - Streams events from the GitHub API
-- Implements Medallion Architecture (Bronze, Silver, Gold layers)
+- Implements Medallion Architecture with Bronze, Silver and Gold Layers
 - Provides metrics via a REST API:
   - Calculate the average time between pull requests for a given repository
+  - Get a list of unique repository names that has more than 1 pull request.
   - Return the total number of events grouped by event type for a given time offset
+  - Calculate the most active repositories by event amount in a given time frame.
 - Visualization dashboard for metrics using Plotly Dash
 
 ## Architecture
@@ -17,7 +19,7 @@ The application follows the Medallion Architecture pattern:
 
 1. **Bronze Layer**: Raw data from the GitHub API stored as JSON files
 2. **Silver Layer**: Cleaned and structured data in SQLite database
-3. **Gold Layer**: Business-specific aggregated metrics in SQLite database
+3. **Gold Layer**: Data exposed via APIs that respond to specific business metrics
 
 ![Architecture Diagram](architecture.mermaid)
 
@@ -32,42 +34,48 @@ The application follows the Medallion Architecture pattern:
 2. **Silver Layer Transformation**:
    - Reads raw JSON files from the Bronze layer
    - Transforms data into a structured schema
+   - Filters for the events that we are interested in
    - Loads data into a SQLite database
-   - Still contains all events without business filtering
 
 3. **Gold Layer Aggregation**:
    - Aggregates data from the Silver layer
-   - Creates business-specific metrics and views
-   - Stores results in a separate SQLite database
+   - Creates business-specific metrics
+   - Doesn't store data, just exposed through the APIs. It can be tables or views butit wasn't necessary for this project.
    - Optimized for query performance
 
 ## Requirements
 
+- I developed the project on a Windows OS. Please let me know if there are issues with running this on macOS.
 - Python 3.11+
-- Poetry (for dependency management)
-- GitHub Personal Access Token (for API access)
+- Poetry (version 2.1.2)
+- GitHub Personal Access Token (should be put into the .env file)
 
 ## Installation
 
 1. Clone the repository
 2. Install dependencies with Poetry:
-   \`\`\`
-   poetry install
-   \`\`\`
+
+         poetry install
+
 
 ## Running the Application
 
-1. Set your GitHub Personal Access Token as an environment variable:
-   \`\`\`
-   export GITHUB_TOKEN=your_github_personal_access_token
-   \`\`\`
+1. Create a .env file and store your GitHub Personal Access Token there:
 
-2. Run the application:
-   \`\`\`
-   poetry run python main.py
-   \`\`\`
+         GITHUB_TOKEN=your_github_personal_access_token
 
-The application will start on http://localhost:8000
+
+2. Run the application with the Data Ingestion and the Dash Interface:
+
+         poetry run python main.py
+
+
+3. Run the application only with the Dash Interface without Data Ingestion:
+
+         poetry run python main.py --dashboard-only
+
+
+The application will start on http://localhost:8000 (you might not  see anything here, go to the links below)
 
 - REST API: http://localhost:8000/api
 - Visualization Dashboard: http://localhost:8000/dashboard
@@ -79,7 +87,7 @@ The application can be configured using environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GITHUB_TOKEN` | GitHub Personal Access Token | None |
-| `COLLECTION_INTERVAL_MINUTES` | Interval between data collection in minutes | 1 |
+| `COLLECTION_INTERVAL_SECONDS` | Interval between data collection in seconds | 15 |
 | `MAX_PAGES_PER_COLLECTION` | Maximum number of pages to fetch per collection | 3 |
 
 ## Data Storage
@@ -88,31 +96,38 @@ All data is stored locally:
 
 - **Bronze Layer**: JSON files in `./data/bronze/`
 - **Silver Layer**: SQLite database at `./data/silver/github_events.db`
-- **Gold Layer**: SQLite database at `./data/gold/github_metrics.db`
+- **Gold Layer**: Not stored, exposed through the APIs
 
 ## API Endpoints
 
-### Get Event Count by Type
-
-\`\`\`
-GET /api/events/count?offset={minutes}
-\`\`\`
-
-Returns the count of events grouped by event type for the specified time offset (in minutes).
-
 ### Get Average Time Between Pull Requests
 
-\`\`\`
-GET /api/repository/{repo}/avg_pr_time
-\`\`\`
+
+      GET /api/repository/{repo}/avg_pr_time
+
 
 Calculates the average time between pull requests for the specified repository.
 
+### Get Repositories with Multiple PRs
+
+
+      GET /api/repositories/with_multiple_prs
+
+
+Returns a list of repositories that had more than 1 Pull Request Event.
+
+### Get Event Count by Type
+
+      GET /api/events/count?offset={minutes}
+
+
+Returns the count of events grouped by event type for the specified time offset (in minutes).
+
 ### Get Active Repositories
 
-\`\`\`
-GET /api/repositories/active?limit={limit}&offset={minutes}
-\`\`\`
+
+     GET /api/repositories/active?limit={limit}&offset={minutes}
+
 
 Returns the most active repositories based on event count within the specified time offset.
 
@@ -128,7 +143,7 @@ By default, it returns up to 30 events per page. You can't increase this limit b
 Yes, for comprehensive data collection, we paginate through results. GitHub provides Link headers for pagination. However, GitHub only keeps events for a limited time (a few hours), so there's a finite number of pages.
 
 ### Do we catch all events with one query per minute?
-No, we won't catch all events, especially during high-activity periods. GitHub generates thousands of events per minute across all repositories. With a 1-minute polling interval, we'll capture a subset of events.
+No, we won't catch all events, especially during high-activity periods. GitHub generates thousands of events per minute across all repositories. With a 15 second polling interval, we'll capture a subset of events.
 
 To increase coverage, we:
 - Paginate through multiple pages per collection (configurable)
@@ -139,48 +154,41 @@ To increase coverage, we:
 
 1. **GitHub API Rate Limits**: Without authentication, the GitHub API has strict rate limits (60 requests per hour). With a Personal Access Token, this increases to 5,000 requests per hour.
 
-2. **Data Collection Frequency**: Events are collected every minute by default. This can be adjusted using the `COLLECTION_INTERVAL_MINUTES` environment variable.
+2. **Data Collection Frequency**: Events are collected every 15 seconds by default. This can be adjusted using the `COLLECTION_INTERVAL_SECONDS` variable in the config.py.
 
-3. **Event Types**: All event types are collected in the Bronze and Silver layers. The Gold layer focuses on WatchEvent, PullRequestEvent, and IssuesEvent for specific metrics.
+3. **Event Types**: All event types are collected in the Bronze and Silver layers. The Gold layer isexposed through the APIs.
 
 4. **Time Calculations**: All timestamps are stored and processed in UTC.
 
-5. **Data Retention**: There is no automatic data cleanup. For long-running deployments, you might want to implement data retention policies.
-
 ## Development
-
-### Running Tests
-
-\`\`\`
-poetry run pytest
-\`\`\`
 
 ### Code Formatting
 
-\`\`\`
-poetry run black .
-poetry run isort .
-\`\`\`
+
+- poetry run black .
+- poetry run isort github_event_monitor/.
+
 
 ### Linting
 
-\`\`\`
-poetry run flake8
-\`\`\`
+
+- poetry run flake8 github_event_monitor/.
+
 
 ## Project Structure
 
-\`\`\`
-github_event_monitor/
-├── __init__.py           # Package initialization
-├── api.py                # REST API endpoints
-├── config.py             # Configuration settings
-├── database.py           # Database connection utilities
-├── models.py             # SQLAlchemy models
-├── pipeline.py           # Data pipeline orchestration
-├── visualization.py      # Dash visualization dashboard
-└── medallion/            # Medallion architecture implementation
-    ├── __init__.py
-    ├── bronze.py         # Bronze layer (raw data ingestion)
-    ├── silver.py         # Silver layer (data transformation)
-    └── gold.py           # Gold layer (business metrics)
+
+      github_event_monitor/
+      ├── __init__.py
+      ├── api.py
+      ├── config.py
+      ├── database.py
+      ├── models.py
+      ├── pipeline.py
+      ├── visualization.py
+      └── medallion/
+         ├── __init__.py
+         ├── bronze.py
+         ├── silver.py
+         └── gold.py
+      main.py
