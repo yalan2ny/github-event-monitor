@@ -1,0 +1,12 @@
+graph TD
+    User["User"]
+    GitHub["GitHub" API]
+    System["GitHub Event Monitor System"]
+    REST["REST API"]
+    Dashboard["Visualization Dashboard"]
+
+    User -->|"Uses"| REST
+    User -->|"Uses"| Dashboard
+    REST -->|"Part of"| System
+    Dashboard -->|"Part of"| System
+    System -->|"Fetches Events"| GitHub

@@ -21,7 +21,7 @@ The application follows the Medallion Architecture pattern:
 2. **Silver Layer**: Cleaned and structured data in SQLite database
 3. **Gold Layer**: Data exposed via APIs that respond to specific business metrics
 
-![Architecture Diagram](architecture.mermaid)
+![Architecture Diagram C4 Level 1](c4_level1.mermaid)
 
 ### Data Flow
 
