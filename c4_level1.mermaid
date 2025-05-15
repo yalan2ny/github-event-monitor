@@ -1,9 +1,12 @@
-```mermaid
-flowchart TD
-    User[User --- Data Consumer]
-    GitHubAPI[GitHub API --- External System]
-    System[GitHub Metrics Platform]
+graph TD
+    User[User]
+    GitHub[GitHub API]
+    System[GitHub Event Monitor System<br><strong>(This Project)</strong>]
+    REST[REST API]
+    Dashboard[Visualization Dashboard]
 
-    User -->|Uses| System
-    System -->|Fetches GitHub Events| GitHubAPI
-```
+    User -->|Uses| REST
+    User -->|Uses| Dashboard
+    REST -->|Part of| System
+    Dashboard -->|Part of| System
+    System -->|Fetches Events| GitHub
