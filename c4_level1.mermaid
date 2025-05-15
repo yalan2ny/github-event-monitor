@@ -1,12 +1,8 @@
+```mermaid
 graph TD
-    User[User<br><i>(Data Consumer)</i>]
-    System[GitHub Metrics Platform<br><b>(Your System)</b>]
+    User[User --- Data Consumer]
+    System[GitHub Metrics Platform]
+    GitHubAPI[GitHub API --- External System]
 
-    GitHubAPI[GitHub API<br><i>(External System)</i>]
-
-    subgraph External Systems
-        GitHubAPI
-    end
-
-    User -->|Queries Metrics<br>or Views Dashboards| System
-    System -->|Fetches Events| GitHubAPI
+    User -->|Uses| System
+    System -->|Fetches GitHub Events| GitHubAPI
