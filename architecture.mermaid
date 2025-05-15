@@ -2,7 +2,7 @@ graph TD
     GitHubAPI["GitHub API"]
     BronzeLayer["Bronze Layer<br>(Raw JSON Files)"]
     SilverLayer["Silver Layer<br>(SQLite Database)"]
-    GoldLayer["Gold Layer<br>(SQLite Database)"]
+    GoldLayer["Gold Layer<br>(API Queries)"]
     API["REST API"]
     Dashboard["Visualization Dashboard"]
     User["User"]
@@ -11,7 +11,7 @@ graph TD
     BronzeLayer -->|"Transform"| SilverLayer
     SilverLayer -->|"Aggregate"| GoldLayer
     GoldLayer -->|"Serve Metrics"| API
-    GoldLayer -->|"Visualize"| Dashboard
+    API -->|"Visualize"| Dashboard
     User -->|"Query"| API
     User -->|"View"| Dashboard
 
