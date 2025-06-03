@@ -77,7 +77,7 @@ The application follows the Medallion Architecture pattern:
 
 The application will start on http://localhost:8000 (you might not  see anything here, go to the links below)
 
-- REST API: http://localhost:8000/api
+- REST API: http://localhost:8000/docs#/
 - Visualization Dashboard: http://localhost:8000/dashboard
 
 ## Configuration

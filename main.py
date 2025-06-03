@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import argparse
 import logging
+import threading
+import time
 
 from github_event_monitor.pipeline import DataPipeline
 from github_event_monitor.api import router as api_router
@@ -28,6 +30,16 @@ pipeline = DataPipeline()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    stop_thread = False  # Signal for background thread stop
+
+    def pipeline_loop():
+        while not stop_thread:
+            try:
+                pipeline.run()
+            except Exception as e:
+                logger.error(f"Pipeline loop error: {e}")
+            time.sleep(config.COLLECTION_INTERVAL_SECONDS)
+
     try:
         if not DASHBOARD_ONLY:
             if not config.GITHUB_TOKEN:
@@ -37,16 +49,20 @@ async def lifespan(app: FastAPI):
                 )
             pipeline.initialize()
             logger.info("Data pipeline initialized")
-            pipeline.run()
-            logger.info("Initial data pipeline run completed")
+            # Start background pipeline thread
+            thread = threading.Thread(target=pipeline_loop, daemon=True)
+            thread.start()
+            logger.info("Started background pipeline loop")
         else:
             logger.info(
                 "Running in DASHBOARD ONLY mode: pipeline/scheduler will not start."
             )
         yield
     finally:
+        # There is no robust thread kill in Python;
+        # for production, use a more advanced method (event, etc)
+        stop_thread = True
         logger.info("Application shutdown.")
-
 
 app = FastAPI(
     title="GitHub Event Monitor",
